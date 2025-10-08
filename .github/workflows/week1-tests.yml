@@ -15,11 +15,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         java-version: [21]
-    
+
     services:
       mysql:
         image: mysql:8.0
@@ -37,175 +37,177 @@ jobs:
           --health-retries=3
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK ${{ matrix.java-version }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ matrix.java-version }}
-        distribution: 'temurin'
-        cache: maven
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+      # Optional: keep if you want extra ~/.m2 caching. Otherwise you can delete this block.
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-    - name: Wait for MySQL to be ready
-      run: |
-        for i in {30..0}; do
-          if mysqladmin ping -h"127.0.0.1" -P3306 -uroot -proot123 --silent; then
-            echo "MySQL is ready"
-            break
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {30..0}; do
+            if mysqladmin ping -h"127.0.0.1" -P3306 -uroot -proot123 --silent; then
+              echo "MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL... ($i)"
+            sleep 1
+          done
+          if [ "$i" = 0 ]; then
+            echo "MySQL failed to start"
+            exit 1
           fi
-          echo "Waiting for MySQL... ($i)"
-          sleep 1
-        done
-        if [ "$i" = 0 ]; then
-          echo "MySQL failed to start"
-          exit 1
-        fi
 
-    - name: Set up test database
-      run: |
-        mysql -h127.0.0.1 -P3306 -uroot -proot123 -e "CREATE DATABASE IF NOT EXISTS mydb;"
-        mysql -h127.0.0.1 -P3306 -uroot -proot123 mydb < week1/sakila-mysql.sql || echo "SQL script execution completed"
+      - name: Set up test database
+        run: |
+          mysql -h127.0.0.1 -P3306 -uroot -proot123 -e "CREATE DATABASE IF NOT EXISTS mydb;"
+          mysql -h127.0.0.1 -P3306 -uroot -proot123 mydb < week1/sakila-mysql.sql || echo "SQL script execution completed"
 
-    - name: Make Maven wrapper executable
-      run: chmod +x week1/mvnw
+      - name: Make Maven wrapper executable
+        run: chmod +x week1/mvnw
 
-    - name: Run tests with Maven
-      run: |
-        cd week1
-        ./mvnw clean test
-      env:
-        SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-        SPRING_DATASOURCE_USERNAME: root
-        SPRING_DATASOURCE_PASSWORD: root123
+      - name: Run tests with Maven
+        run: |
+          cd week1
+          ./mvnw clean test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root123
 
-    - name: Run integration tests
-      run: |
-        cd week1
-        ./mvnw test -Dtest=*IntegrationTest
-      env:
-        SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-        SPRING_DATASOURCE_USERNAME: root
-        SPRING_DATASOURCE_PASSWORD: root123
+      - name: Run integration tests
+        run: |
+          cd week1
+          ./mvnw test -Dtest=*IntegrationTest
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/mydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root123
 
-    - name: Generate test report
-      run: |
-        cd week1
-        ./mvnw surefire-report:report
+      - name: Generate test report
+        run: |
+          cd week1
+          ./mvnw surefire-report:report
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: test-results-java-${{ matrix.java-version }}
-        path: |
-          week1/target/surefire-reports/
-          week1/target/site/
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-java-${{ matrix.java-version }}
+          path: |
+            week1/target/surefire-reports/
+            week1/target/site/
 
-    - name: Publish test results
-      uses: dorny/test-reporter@v1
-      if: always()
-      with:
-        name: Test Results (Java ${{ matrix.java-version }})
-        path: 'week1/target/surefire-reports/TEST-*.xml'
-        reporter: java-junit
-        fail-on-error: true
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results (Java ${{ matrix.java-version }})
+          path: 'week1/target/surefire-reports/TEST-*.xml'
+          reporter: java-junit
+          fail-on-error: true
 
   code-quality:
     runs-on: ubuntu-latest
     needs: test
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Make Maven wrapper executable
-      run: chmod +x week1/mvnw
+      - name: Make Maven wrapper executable
+        run: chmod +x week1/mvnw
 
-    - name: Run code coverage
-      run: |
-        cd week1
-        ./mvnw clean test jacoco:report
+      - name: Run code coverage
+        run: |
+          cd week1
+          ./mvnw clean test jacoco:report
 
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: week1/target/site/jacoco/jacoco.xml
-        flags: week1
-        name: week1-coverage
-        fail_ci_if_error: false
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: week1/target/site/jacoco/jacoco.xml
+          flags: week1
+          name: week1-coverage
+          fail_ci_if_error: false
+          # token: ${{ secrets.CODECOV_TOKEN }}   # ← if required for your repo/org
 
-    - name: Upload coverage artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: coverage-report
-        path: week1/target/site/jacoco/
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: week1/target/site/jacoco/
 
   build-and-package:
     runs-on: ubuntu-latest
     needs: [test, code-quality]
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Make Maven wrapper executable
-      run: chmod +x week1/mvnw
+      - name: Make Maven wrapper executable
+        run: chmod +x week1/mvnw
 
-    - name: Build application
-      run: |
-        cd week1
-        ./mvnw clean compile
+      - name: Build application
+        run: |
+          cd week1
+          ./mvnw clean compile
 
-    - name: Package application
-      run: |
-        cd week1
-        ./mvnw package -DskipTests
+      - name: Package application
+        run: |
+          cd week1
+          ./mvnw package -DskipTests
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: jar-artifacts
-        path: week1/target/*.jar
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-artifacts
+          path: week1/target/*.jar
 
   notify:
     runs-on: ubuntu-latest
     needs: [test, code-quality, build-and-package]
     if: always()
-    
-    steps:
-    - name: Notify success
-      if: ${{ needs.test.result == 'success' && needs.code-quality.result == 'success' && needs.build-and-package.result == 'success' }}
-      run: |
-        echo "✅ All Week1 tests passed successfully!"
-        echo "🚀 Build and packaging completed!"
 
-    - name: Notify failure
-      if: ${{ needs.test.result == 'failure' || needs.code-quality.result == 'failure' || needs.build-and-package.result == 'failure' }}
-      run: |
-        echo "❌ Some Week1 jobs failed!"
-        echo "Test result: ${{ needs.test.result }}"
-        echo "Code quality result: ${{ needs.code-quality.result }}"
-        echo "Build result: ${{ needs.build-and-package.result }}"
-        exit 1
+    steps:
+      - name: Notify success
+        if: ${{ needs.test.result == 'success' && needs.code-quality.result == 'success' && needs.build-and-package.result == 'success' }}
+        run: |
+          echo "✅ All Week1 tests passed successfully!"
+          echo "🚀 Build and packaging completed!"
+
+      - name: Notify failure
+        if: ${{ needs.test.result == 'failure' || needs.code-quality.result == 'failure' || needs.build-and-package.result == 'failure' }}
+        run: |
+          echo "❌ Some Week1 jobs failed!"
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Code quality result: ${{ needs.code-quality.result }}"
+          echo "Build result: ${{ needs.build-and-package.result }}"
+          exit 1
