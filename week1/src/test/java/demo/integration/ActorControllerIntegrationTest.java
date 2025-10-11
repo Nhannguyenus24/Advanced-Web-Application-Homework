@@ -3,14 +3,14 @@ package demo.integration;
 import demo.dto.ActorRequest;
 import demo.dto.ActorUpdateRequest;
 import demo.model.Actor;
-import demo.repository.ActorRepository;
+import demo.repository.IRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -32,8 +32,8 @@ class ActorControllerIntegrationTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
-    @MockBean
-    private ActorRepository actorRepository;
+    @MockitoBean
+    private IRepository actorRepository;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;

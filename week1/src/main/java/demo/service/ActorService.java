@@ -4,7 +4,7 @@ import demo.dto.ActorRequest;
 import demo.dto.ActorResponse;
 import demo.dto.ActorUpdateRequest;
 import demo.model.Actor;
-import demo.repository.ActorRepository;
+import demo.repository.IRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 @Service
 public class ActorService {
 
-    private final ActorRepository actorRepository;
+    private final IRepository actorRepository;
 
     @Autowired
-    public ActorService(ActorRepository actorRepository) {
+    public ActorService(IRepository actorRepository) {
         this.actorRepository = actorRepository;
     }
 

@@ -4,7 +4,7 @@ import demo.dto.ActorRequest;
 import demo.dto.ActorResponse;
 import demo.dto.ActorUpdateRequest;
 import demo.model.Actor;
-import demo.repository.ActorRepository;
+import demo.repository.IRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 class ActorServiceTest {
 
     @Mock
-    private ActorRepository actorRepository;
+    private IRepository actorRepository;
 
     @InjectMocks
     private ActorService actorService;

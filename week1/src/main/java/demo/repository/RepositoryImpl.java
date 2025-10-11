@@ -14,10 +14,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class ActorRepositoryImpl implements ActorRepository {
+public class RepositoryImpl implements IRepository {
     private final JdbcTemplate jdbc;
 
-    public ActorRepositoryImpl(JdbcTemplate jdbc) {
+    public RepositoryImpl(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
