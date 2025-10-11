@@ -47,12 +47,3 @@ jobs:
           path: |
             week1/target/surefire-reports/
             week1/target/site/
-
-      - name: Publish test results
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Test Results (Java ${{ matrix.java-version }})
-          path: 'week1/target/surefire-reports/TEST-*.xml'
-          reporter: java-junit
-          fail-on-error: true
