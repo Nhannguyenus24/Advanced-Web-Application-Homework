@@ -1,0 +1,158 @@
+### Test Sakila CRUD API
+### Make sure the application is running on http://localhost:8080
+
+### ===== ACTOR ENDPOINTS =====
+
+### Get all actors
+GET http://localhost:8080/api/actors
+
+### Get actor by ID
+GET http://localhost:8080/api/actors/1
+
+### Create new actor
+POST http://localhost:8080/api/actors
+Content-Type: application/json
+
+{
+  "firstName": "Leonardo",
+  "lastName": "DiCaprio"
+}
+
+### Update actor
+PUT http://localhost:8080/api/actors/1
+Content-Type: application/json
+
+{
+  "firstName": "PENELOPE",
+  "lastName": "GUINESS-UPDATED"
+}
+
+### Search actors
+GET http://localhost:8080/api/actors/search?keyword=PENELOPE
+
+### Delete actor (use a valid ID)
+DELETE http://localhost:8080/api/actors/201
+
+
+### ===== CATEGORY ENDPOINTS =====
+
+### Get all categories
+GET http://localhost:8080/api/categories
+
+### Get category by ID
+GET http://localhost:8080/api/categories/1
+
+### Create new category
+POST http://localhost:8080/api/categories
+Content-Type: application/json
+
+{
+  "name": "Thriller"
+}
+
+### Update category
+PUT http://localhost:8080/api/categories/1
+Content-Type: application/json
+
+{
+  "name": "Action-Updated"
+}
+
+### Delete category (use a valid ID)
+DELETE http://localhost:8080/api/categories/17
+
+
+### ===== FILM ENDPOINTS =====
+
+### Get all films
+GET http://localhost:8080/api/films
+
+### Get film by ID
+GET http://localhost:8080/api/films/1
+
+### Create new film
+POST http://localhost:8080/api/films
+Content-Type: application/json
+
+{
+  "title": "The Matrix Resurrections",
+  "description": "Return to a world of two realities",
+  "releaseYear": 2021,
+  "languageId": 1,
+  "rentalDuration": 5,
+  "rentalRate": 4.99,
+  "length": 148,
+  "replacementCost": 24.99,
+  "rating": "R",
+  "specialFeatures": "Trailers,Behind the Scenes"
+}
+
+### Update film
+PUT http://localhost:8080/api/films/1
+Content-Type: application/json
+
+{
+  "title": "ACADEMY DINOSAUR - UPDATED",
+  "description": "An epic tale updated",
+  "releaseYear": 2006,
+  "languageId": 1,
+  "rentalDuration": 6,
+  "rentalRate": 3.99,
+  "length": 86,
+  "replacementCost": 20.99,
+  "rating": "PG"
+}
+
+### Search films by title
+GET http://localhost:8080/api/films/search?title=ACADEMY
+
+### Get films by year
+GET http://localhost:8080/api/films/year/2006
+
+### Delete film (use a valid ID)
+DELETE http://localhost:8080/api/films/1001
+
+
+### ===== CUSTOMER ENDPOINTS =====
+
+### Get all customers
+GET http://localhost:8080/api/customers
+
+### Get customer by ID
+GET http://localhost:8080/api/customers/1
+
+### Create new customer
+POST http://localhost:8080/api/customers
+Content-Type: application/json
+
+{
+  "storeId": 1,
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "addressId": 5,
+  "active": true
+}
+
+### Update customer
+PUT http://localhost:8080/api/customers/1
+Content-Type: application/json
+
+{
+  "storeId": 1,
+  "firstName": "MARY",
+  "lastName": "SMITH-UPDATED",
+  "email": "mary.smith.updated@sakilacustomer.org",
+  "addressId": 5,
+  "active": true
+}
+
+### Search customers
+GET http://localhost:8080/api/customers/search?keyword=MARY
+
+### Get active customers
+GET http://localhost:8080/api/customers/active
+
+### Delete customer (use a valid ID)
+DELETE http://localhost:8080/api/customers/600
+
