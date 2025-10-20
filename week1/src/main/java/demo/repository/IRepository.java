@@ -13,11 +13,4 @@ public interface IRepository {
     public int insert(Actor actor);
     public int update(int id, Actor actor);
     public int delete(int id);
-
-    // film
-//    public List<Film> findAll();
-//    public Optional<Film> findById(int id);
-//    public int insert(Film actor);
-//    public int update(int id, Film actor);
-//    public int delete(int id);
 }
