@@ -1,0 +1,28 @@
+GET http://localhost:8080/api/actors
+
+###
+GET http://localhost:8080/api/actors/1
+
+### 
+GET http://localhost:8080/api/actors/999
+
+###  
+POST http://localhost:8080/api/actors
+Content-Type: application/json
+
+{
+  "firstName": "open",
+  "lastName": "close"
+}
+
+###  
+PUT http://localhost:8080/api/actors/201
+Content-Type: application/json
+
+{
+  "firstName": "close",
+  "lastName": "open"
+}
+
+###  
+DELETE http://localhost:8080/api/actors/201
