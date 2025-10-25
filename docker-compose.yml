@@ -1,3 +1,11 @@
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "1m"
+    max-file: "1"
+    tag: "{{.Name}}"
+
 services:
   mysql:
     image: mysql:8.4
@@ -14,9 +22,55 @@ services:
       - ./sakila-mysql.sql:/docker-entrypoint-initdb.d/sakila-mysql.sql
     networks:
       - my_network
+    logging: *default-logging
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - my_network
+    logging: *default-logging
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - ./config/promtail/promtail.yaml:/etc/promtail/config.yml
+      - ./week3/logs:/var/log/week3
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - my_network
+    depends_on:
+      - loki
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - my_network
+    depends_on:
+      - loki
+    logging: *default-logging
+
 
 volumes:
   mysql_data:
+  loki_data:
+  grafana_data:
 
 networks:
   my_network:

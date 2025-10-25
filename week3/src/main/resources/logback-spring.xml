@@ -4,6 +4,9 @@
     <!-- Biến dùng chung -->
     <property name="APP_NAME"   value="${spring.application.name:-demo-app}"/>
     <property name="LOG_FOLDER" value="${LOG_FOLDER:-logs}"/>
+    
+    <!-- Pattern cho Loki (JSON format) -->
+    <property name="LOKI_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %level %thread %logger{36} %msg%n"/>
 
     <!-- Pattern: có time, thread, level, logger, trace/span nếu có Micrometer Tracing -->
     <property name="LOG_PATTERN"
@@ -14,17 +17,6 @@
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
-    </appender>
-    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
-
-        <appender-ref ref="FILE" />
-        <!-- queue tối đa -->
-        <queueSize>5000</queueSize>
-        <!-- bỏ log khi queue đầy -->
-        <discardingThreshold>0</discardingThreshold>
-        <!-- timeout khi flush -->
-        <includeCallerData>false</includeCallerData>
-        <neverBlock>true</neverBlock>
     </appender>
     <!-- File + Rotation theo ngày & kích thước -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -39,7 +31,7 @@
         </rollingPolicy>
 
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>${LOKI_PATTERN}</pattern>
         </encoder>
 
     </appender>
