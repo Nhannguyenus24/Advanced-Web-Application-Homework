@@ -31,13 +31,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Make Maven wrapper executable
-        run: chmod +x week1/mvnw
-
-      - name: Run tests with Maven wrapper (Ubuntu)
+      - name: Run tests with Maven (Ubuntu)
         run: |
-          cd week1
-          ./mvnw clean test
+          mvn -f week1/pom.xml -B clean test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
