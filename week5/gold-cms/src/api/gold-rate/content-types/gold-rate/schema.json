@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "gold_rates",
+  "info": {
+    "singularName": "gold-rate",
+    "pluralName": "gold-rates",
+    "displayName": "Gold Rate"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "buy_price": {
+      "type": "decimal"
+    },
+    "sell_price": {
+      "type": "decimal"
+    },
+    "timestamp": {
+      "type": "datetime"
+    },
+    "unit": {
+      "type": "string",
+      "default": "million VND / tael"
+    }
+  }
+}
