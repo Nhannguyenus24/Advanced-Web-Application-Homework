@@ -1,3 +1,4 @@
+import "./App.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
@@ -17,115 +18,14 @@ interface GoldRate {
   timestamp: string;
 }
 
-const styles: { [key: string]: React.CSSProperties } = {
-  app: {
-    minHeight: "100vh",
-    background: "linear-gradient(180deg, #0f172a 0%, #111827 100%)",
-    padding: 24,
-  },
-  container: {
-    width: "100%",
-    margin: 0,
-    fontFamily:
-      "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
-    color: "#e5e7eb",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 800,
-    letterSpacing: 0.2,
-    color: "#fbbf24",
-  },
-  subtitle: {
-    marginTop: 4,
-    color: "#9ca3af",
-    fontSize: 14,
-  },
-  currentCard: {
-    background:
-      "linear-gradient(180deg, rgba(251,191,36,0.10) 0%, rgba(253,230,138,0.06) 100%)",
-    border: "1px solid rgba(251,191,36,0.25)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-  },
-  row: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 12,
-  },
-  stat: {
-    background: "rgba(17,24,39,0.5)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 12,
-    padding: 12,
-  },
-  label: {
-    color: "#9ca3af",
-    fontSize: 12,
-  },
-  value: {
-    fontSize: 22,
-    fontWeight: 700,
-    color: "#f3f4f6",
-  },
-  chartCard: {
-    background: "#0b1220",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    padding: 16,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-  },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: 700,
-    marginBottom: 8,
-    color: "#e5e7eb",
-  },
-  footer: {
-    marginTop: 12,
-    color: "#9ca3af",
-    fontSize: 12,
-    textAlign: "right",
-  },
-  badge: {
-    display: "inline-block",
-    padding: "2px 8px",
-    background: "rgba(99,102,241,0.15)",
-    color: "#a5b4fc",
-    border: "1px solid rgba(99,102,241,0.35)",
-    borderRadius: 9999,
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  loading: {
-    padding: 16,
-    textAlign: "center",
-    color: "#9ca3af",
-  },
-  error: {
-    padding: 12,
-    background: "rgba(239,68,68,0.12)",
-    border: "1px solid rgba(239,68,68,0.35)",
-    color: "#fecaca",
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-};
+// styles moved to App.css
 
 function App() {
   const [current, setCurrent] = useState<GoldRate | null>(null);
   const [history, setHistory] = useState<GoldRate[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
-  const [selectedRange, setSelectedRange] = useState<"day" | "week" | "month">("day");
+  const [selectedRange, setSelectedRange] = useState<"day" | "month" | "year">("day");
 
   const numberFmt = useMemo(
     () =>
@@ -161,10 +61,10 @@ function App() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const rangeChips: Array<{ key: "day" | "week" | "month"; label: string }> = [
+  const rangeChips: Array<{ key: "day" | "month" | "year"; label: string }> = [
     { key: "day", label: "1D" },
-    { key: "week", label: "1W" },
     { key: "month", label: "1M" },
+    { key: "year", label: "1Y" },
   ];
 
   const change = useMemo(() => {
@@ -176,19 +76,83 @@ function App() {
     return { diff, pct };
   }, [history]);
 
+  const xTicks = useMemo(() => {
+    if (!history || history.length === 0) return [] as string[];
+    const ticks: string[] = [];
+    const pushIfBoundary = (d: Date, original: string) => {
+      const minutes = d.getMinutes();
+      const hours = d.getHours();
+      const day = d.getDate();
+      if (selectedRange === "day") {
+        if (minutes === 0) ticks.push(original); // every hour
+      } else if (selectedRange === "month") {
+        if (hours === 0 && minutes === 0) ticks.push(original); // each day at 00:00
+      } else if (selectedRange === "year") {
+        if (day === 1 && hours === 0 && minutes === 0) ticks.push(original); // first day of month
+      }
+    };
+    for (const item of history) {
+      const d = new Date(item.timestamp);
+      pushIfBoundary(d, item.timestamp);
+    }
+    // Ensure first and last are included for context
+    if (history.length > 0) {
+      const firstTs = history[0].timestamp;
+      const lastTs = history[history.length - 1].timestamp;
+      if (!ticks.includes(firstTs)) ticks.unshift(firstTs);
+      if (!ticks.includes(lastTs)) ticks.push(lastTs);
+    }
+    return ticks;
+  }, [history, selectedRange]);
+
+  const formatAxisTick = useCallback(
+    (value: string) => {
+      const date = new Date(value);
+      if (selectedRange === "day") {
+        return date.toLocaleTimeString(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      if (selectedRange === "month") {
+        // show compact month/day for month view
+        return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+      // year: show month abbrev
+      return date.toLocaleDateString(undefined, { month: "short" });
+    },
+    [selectedRange]
+  );
+
+  const formatTooltipLabel = useCallback(
+    (value: string) => {
+      const date = new Date(value);
+      if (selectedRange === "day") {
+        return date.toLocaleString();
+      }
+      if (selectedRange === "month") {
+        // date only
+        return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+      }
+      // year: show month and year
+      return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    },
+    [selectedRange]
+  );
+
   return (
-    <div style={styles.app}>
-      <div style={styles.container}>
-        <div style={styles.header}>
+    <div className="app">
+      <div className="container">
+        <div className="header">
           <span role="img" aria-label="gold">💰</span>
-          <h1 style={styles.title}>Gold Price Today</h1>
-          <span style={styles.badge}>Live</span>
+          <h1 className="title">Gold Price Today</h1>
+          <span className="badge">Live</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={styles.subtitle}>
+        <div className="subheader">
+          <div className="subtitle">
             Track current and intraday movement of gold prices.
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="chips">
             {rangeChips.map((r) => {
               const active = r.key === selectedRange;
               return (
@@ -196,17 +160,7 @@ function App() {
                   key={r.key}
                   aria-pressed={active}
                   onClick={() => setSelectedRange(r.key)}
-                  style={{
-                    cursor: "pointer",
-                    border: "1px solid",
-                    borderColor: active ? "#fbbf24" : "rgba(255,255,255,0.15)",
-                    color: active ? "#111827" : "#e5e7eb",
-                    background: active ? "#fbbf24" : "transparent",
-                    padding: "6px 10px",
-                    borderRadius: 9999,
-                    fontWeight: 700,
-                    fontSize: 12,
-                  }}
+                  className={`chip ${active ? "chip--active" : ""}`}
                 >
                   {r.label}
                 </button>
@@ -215,32 +169,32 @@ function App() {
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="error">{error}</div>}
 
         {loading && (
-          <div style={styles.loading}>Loading latest prices…</div>
+          <div className="loading">Loading latest prices…</div>
         )}
 
         {current && (
-          <div style={styles.currentCard}>
-            <div style={styles.row}>
-              <div style={styles.stat}>
-                <div style={styles.label}>Buy Price</div>
-                <div style={styles.value}>{numberFmt.format(current.buy_price)}</div>
+          <div className="currentCard">
+            <div className="row">
+              <div className="stat">
+                <div className="label">Buy Price</div>
+                <div className="value">{numberFmt.format(current.buy_price)}</div>
               </div>
-              <div style={styles.stat}>
-                <div style={styles.label}>Sell Price</div>
-                <div style={styles.value}>{numberFmt.format(current.sell_price)}</div>
+              <div className="stat">
+                <div className="label">Sell Price</div>
+                <div className="value">{numberFmt.format(current.sell_price)}</div>
               </div>
             </div>
-            <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
-              <div style={{ ...styles.stat, flex: 1 }}>
-                <div style={styles.label}>Unit</div>
-                <div style={styles.value}>{current.unit}</div>
+            <div className="mt-12 flex gap-12">
+              <div className="stat grow">
+                <div className="label">Unit</div>
+                <div className="value">{current.unit}</div>
               </div>
-              <div style={{ ...styles.stat, flex: 1 }}>
-                <div style={styles.label}>Last Updated</div>
-                <div style={styles.value}>
+              <div className="stat grow">
+                <div className="label">Last Updated</div>
+                <div className="value">
                   {new Date(current.timestamp).toLocaleString()}
                 </div>
               </div>
@@ -248,17 +202,17 @@ function App() {
           </div>
         )}
 
-        <div style={styles.chartCard}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={styles.chartTitle}>Intraday Gold Price Chart</div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ width: 10, height: 10, background: "#a78bfa", borderRadius: 2, display: "inline-block" }} />
-                <span style={{ color: "#c7d2fe", fontSize: 12 }}>Buy</span>
+        <div className="chartCard">
+          <div className="chartHeader">
+            <div className="chartTitle">Intraday Gold Price Chart</div>
+            <div className="legend">
+              <div className="legendItem">
+                <span className="swatch swatch-buy" />
+                <span className="legendTextBuy">Buy</span>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ width: 10, height: 10, background: "#34d399", borderRadius: 2, display: "inline-block" }} />
-                <span style={{ color: "#bbf7d0", fontSize: 12 }}>Sell</span>
+              <div className="legendItem">
+                <span className="swatch swatch-sell" />
+                <span className="legendTextSell">Sell</span>
               </div>
             </div>
           </div>
@@ -267,8 +221,10 @@ function App() {
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis
                 dataKey="timestamp"
-                tickFormatter={(v) => new Date(v).toLocaleTimeString()}
+                tickFormatter={(v) => formatAxisTick(String(v))}
                 stroke="#9ca3af"
+                minTickGap={12}
+                ticks={xTicks}
               />
               <YAxis stroke="#9ca3af" />
               <Tooltip
@@ -278,7 +234,7 @@ function App() {
                   borderRadius: 8,
                   color: "#e5e7eb",
                 }}
-                labelFormatter={(v) => new Date(v).toLocaleString()}
+                labelFormatter={(v) => formatTooltipLabel(String(v))}
                 formatter={(value: number | string, name: string) => [
                   typeof value === "number" ? numberFmt.format(value) : value,
                   name,
@@ -302,13 +258,10 @@ function App() {
               />
             </LineChart>
           </ResponsiveContainer>
-          <div style={{ ...styles.footer, display: "flex", justifyContent: "space-between" }}>
+          <div className="footerBar">
             <div>
               {change && (
-                <span style={{
-                  color: change.diff >= 0 ? "#86efac" : "#fca5a5",
-                  fontWeight: 700,
-                }}>
+                <span className={change.diff >= 0 ? "trendUp" : "trendDown"}>
                   {change.diff >= 0 ? "▲" : "▼"} {numberFmt.format(Math.abs(change.diff))} ({numberFmt.format(Math.abs(change.pct))}%)
                 </span>
               )}

@@ -23,13 +23,29 @@ export default factories.createCoreController(
     },
 
     async history(ctx) {
-      const records = await strapi.db
-        .query("api::gold-rate.gold-rate")
-        .findMany({
-          orderBy: { timestamp: "asc" },
-        });
+      try {
+        const range = (ctx.query?.range as string) || "day";
+        const now = new Date();
+        const cutoff = new Date(now);
+        if (range === "month") {
+          cutoff.setMonth(now.getMonth() - 1);
+        } else if (range === "year") {
+          cutoff.setFullYear(now.getFullYear() - 1);
+        } else {
+          cutoff.setDate(now.getDate() - 1);
+        }
 
-      return records;
+        const records = await strapi.db
+          .query("api::gold-rate.gold-rate")
+          .findMany({
+            where: { timestamp: { $gte: cutoff } },
+            orderBy: { timestamp: "asc" },
+          });
+
+        return records;
+      } catch (err) {
+        ctx.throw(500, err);
+      }
     },
   })
 );
