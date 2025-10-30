@@ -11,18 +11,11 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "buy_price": {
-      "type": "decimal"
+    "updated_text": {
+      "type": "string"
     },
-    "sell_price": {
-      "type": "decimal"
-    },
-    "timestamp": {
-      "type": "datetime"
-    },
-    "unit": {
-      "type": "string",
-      "default": "million VND / tael"
+    "locations": {
+      "type": "json"
     }
   }
 }

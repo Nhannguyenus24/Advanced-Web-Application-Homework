@@ -38,8 +38,8 @@ export default factories.createCoreController(
         const records = await strapi.db
           .query("api::gold-rate.gold-rate")
           .findMany({
-            where: { timestamp: { $gte: cutoff } },
-            orderBy: { timestamp: "asc" },
+            where: { createdAt: { $gte: cutoff } },
+            orderBy: { createdAt: "asc" },
           });
 
         return records;

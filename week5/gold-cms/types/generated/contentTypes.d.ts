@@ -441,7 +441,6 @@ export interface ApiGoldRateGoldRate extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
-    buy_price: Schema.Attribute.Decimal;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -451,11 +450,9 @@ export interface ApiGoldRateGoldRate extends Struct.CollectionTypeSchema {
       'api::gold-rate.gold-rate'
     > &
       Schema.Attribute.Private;
+    locations: Schema.Attribute.JSON;
     publishedAt: Schema.Attribute.DateTime;
-    sell_price: Schema.Attribute.Decimal;
-    timestamp: Schema.Attribute.DateTime;
-    unit: Schema.Attribute.String &
-      Schema.Attribute.DefaultTo<'million VND / tael'>;
+    updated_text: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

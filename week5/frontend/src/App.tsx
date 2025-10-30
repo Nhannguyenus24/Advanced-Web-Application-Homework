@@ -11,31 +11,70 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface GoldRate {
+interface BackendGoldTypeEntry {
+  name: string;
+  gia_ban: string;
+  gia_mua: string;
+  updated_at: string;
+}
+
+interface BackendLocationEntry {
+  name: string;
+  gold_type: BackendGoldTypeEntry[];
+}
+
+interface BackendGoldRecord {
+  id?: number;
+  updated_text: string;
+  locations: BackendLocationEntry[];
+  createdAt?: string;
+}
+
+interface GoldRatePoint {
   buy_price: number;
   sell_price: number;
-  unit: string;
   timestamp: string;
 }
 
 // styles moved to App.css
 
 function App() {
-  const [current, setCurrent] = useState<GoldRate | null>(null);
-  const [history, setHistory] = useState<GoldRate[]>([]);
+  const [current, setCurrent] = useState<GoldRatePoint | null>(null);
+  const [history, setHistory] = useState<GoldRatePoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [selectedRange, setSelectedRange] = useState<"day" | "month" | "year">("day");
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<string>("TPHCM");
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+  const [selectedType, setSelectedType] = useState<string>("SJC");
 
   const numberFmt = useMemo(
     () =>
       new Intl.NumberFormat(undefined, {
         style: "decimal",
-        maximumFractionDigits: 2,
+        maximumFractionDigits: 3,
       }),
     []
   );
 
+  const parsePrice = useCallback((value: string | undefined): number => {
+    if (!value) return 0;
+    const normalized = value.replace(/\./g, "").replace(/\s/g, "");
+    const n = Number.parseInt(normalized, 10);
+    return Number.isFinite(n) ? n : 0;
+  }, []);
+
+  const pickType = useCallback(
+    (record: BackendGoldRecord): BackendGoldTypeEntry | null => {
+      if (!record?.locations?.length) return null;
+      const loc = record.locations.find((l) => l.name === selectedLocation) || record.locations[0];
+      if (!loc || !loc.gold_type?.length) return null;
+      const t = loc.gold_type.find((g) => g.name === selectedType) || loc.gold_type[0];
+      return t || null;
+    },
+    [selectedLocation, selectedType]
+  );
 
   const fetchData = useCallback(async () => {
     try {
@@ -45,15 +84,55 @@ function App() {
         axios.get("http://localhost:1337/api/gold-rates/current"),
         axios.get(`http://localhost:1337/api/gold-rates/history?range=${selectedRange}`),
       ]);
-      setCurrent(currentRes.data);
-      setHistory(historyRes.data);
+      const currentData: BackendGoldRecord = currentRes.data;
+      const historyData: BackendGoldRecord[] = historyRes.data || [];
+
+      const locs = (currentData?.locations || []).map((l) => l.name);
+      setAvailableLocations(locs);
+      if (!locs.includes(selectedLocation) && locs.length) {
+        setSelectedLocation(locs.includes("TPHCM") ? "TPHCM" : locs[0]);
+      }
+      const typeNames = (() => {
+        const loc = currentData?.locations?.find((l) => l.name === selectedLocation) || currentData?.locations?.[0];
+        return (loc?.gold_type || []).map((t) => t.name);
+      })();
+      setAvailableTypes(typeNames);
+      if (!typeNames.includes(selectedType) && typeNames.length) {
+        setSelectedType(typeNames.includes("SJC") ? "SJC" : typeNames[0]);
+      }
+
+      const chosen = pickType(currentData);
+      const currentPoint: GoldRatePoint | null = chosen
+        ? {
+            // convert to millions VND per lượng
+            buy_price: parsePrice(chosen.gia_mua) / 1000,
+            sell_price: parsePrice(chosen.gia_ban) / 1000,
+            timestamp: currentData.createdAt || new Date().toISOString(),
+          }
+        : null;
+      setCurrent(currentPoint);
+
+      const histPoints: GoldRatePoint[] = historyData
+        .map((rec) => {
+          const t = pickType(rec);
+          if (!t) return null;
+          return {
+            // convert to millions VND per lượng
+            buy_price: parsePrice(t.gia_mua) / 1000,
+            sell_price: parsePrice(t.gia_ban) / 1000,
+            timestamp: rec.createdAt || new Date().toISOString(),
+          } as GoldRatePoint;
+        })
+        .filter((x): x is GoldRatePoint => Boolean(x));
+
+      setHistory(histPoints);
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Unable to fetch gold rates. Please try again later.");
     } finally {
       setLoading(false);
     }
-  }, [selectedRange]);
+  }, [selectedRange, selectedLocation, selectedType, parsePrice, pickType]);
 
   useEffect(() => {
     fetchData();
@@ -167,6 +246,28 @@ function App() {
               );
             })}
           </div>
+          <div className="selectors" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <label>
+              <span style={{ marginRight: 6 }}>Location</span>
+              <select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)}>
+                {availableLocations.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span style={{ marginRight: 6 }}>Type</span>
+              <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
+                {availableTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
 
         {error && <div className="error">{error}</div>}
@@ -180,18 +281,14 @@ function App() {
             <div className="row">
               <div className="stat">
                 <div className="label">Buy Price</div>
-                <div className="value">{numberFmt.format(current.buy_price)}</div>
+                <div className="value">{numberFmt.format(current.buy_price)} million VND / tael</div>
               </div>
               <div className="stat">
                 <div className="label">Sell Price</div>
-                <div className="value">{numberFmt.format(current.sell_price)}</div>
+                <div className="value">{numberFmt.format(current.sell_price)} million VND / tael</div>
               </div>
             </div>
             <div className="mt-12 flex gap-12">
-              <div className="stat grow">
-                <div className="label">Unit</div>
-                <div className="value">{current.unit}</div>
-              </div>
               <div className="stat grow">
                 <div className="label">Last Updated</div>
                 <div className="value">
@@ -226,7 +323,7 @@ function App() {
                 minTickGap={12}
                 ticks={xTicks}
               />
-              <YAxis stroke="#9ca3af" />
+              <YAxis stroke="#9ca3af" tickFormatter={(v) => numberFmt.format(Number(v))} />
               <Tooltip
                 contentStyle={{
                   background: "#0b1220",
@@ -236,7 +333,7 @@ function App() {
                 }}
                 labelFormatter={(v) => formatTooltipLabel(String(v))}
                 formatter={(value: number | string, name: string) => [
-                  typeof value === "number" ? numberFmt.format(value) : value,
+                  typeof value === "number" ? `${numberFmt.format(value)} million VND / tael` : value,
                   name,
                 ]}
               />
