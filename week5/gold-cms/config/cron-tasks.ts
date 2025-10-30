@@ -224,13 +224,33 @@ const generateRandomMockData = (): GoldResponse => {
   };
 };
 
+import { crawlGoldRates } from "../src/utils/goldRateExtractor";
+
+function mapToGoldResponse(input: any): GoldResponse | null {
+  if (!input) return null;
+  if (typeof input.updated_text === "string" && Array.isArray(input.locations)) {
+    return input as GoldResponse;
+  }
+  const now = new Date();
+  const updated_text = `Giá vàng ngày: ${now.toLocaleString("vi-VN")}`;
+  return {
+    updated_text,
+    locations: [],
+  };
+}
+
 export default {
   "*/10 * * * * *": async ({ strapi }) => {
     // "0 * * * *": async ({ strapi }) => {
-    const mock = generateRandomMockData();
-
-    await strapi.db.query("api::gold-rate.gold-rate").create({ data: mock });
-
-    console.log("[CRON] Added record:", mock);
+    try {
+      const raw = await crawlGoldRates();
+      const mapped = mapToGoldResponse(raw) || generateRandomMockData();
+      await strapi.db.query("api::gold-rate.gold-rate").create({ data: mapped });
+      console.log("[CRON] Added record:", mapped);
+    } catch (err) {
+      const fallback = generateRandomMockData();
+      await strapi.db.query("api::gold-rate.gold-rate").create({ data: fallback });
+      console.error("[CRON] Failed to fetch real data, used mock. Error:", err);
+    }
   },
 };
