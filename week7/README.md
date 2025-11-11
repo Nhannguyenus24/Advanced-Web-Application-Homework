@@ -497,7 +497,3 @@ Routing based on message header
 4. **Is gRPC suitable for client-to-server communication?**
 
 5. **How to handle failures in asynchronous communication?**
-
----
-
-**© 2025 - Advanced Web Development Course**
