@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.productservice.grpc";
+option java_outer_classname = "ProductProto";
+
+service ProductService {
+  rpc CreateProduct (ProductRequest) returns (ProductResponse);
+  rpc GetProduct (ProductIdRequest) returns (ProductResponse);
+  rpc UpdateProduct (ProductRequest) returns (ProductResponse);
+  rpc DeleteProduct (ProductIdRequest) returns (DeleteResponse);
+  rpc ListProducts (Empty) returns (ProductListResponse);
+}
+
+message ProductRequest {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+}
+
+message ProductIdRequest {
+  int32 id = 1;
+}
+
+message ProductResponse {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+}
+
+message ProductListResponse {
+  repeated ProductResponse products = 1;
+}
+
+message DeleteResponse {
+  bool success = 1;
+}
+
+message Empty {}
