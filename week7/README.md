@@ -471,31 +471,36 @@ How it works:
 
 ## Part 6: Comparing gRPC vs Message Broker
 
-| Criteria | gRPC | Message Broker |
-|----------|------|----------------|
-| Communication model | _[Content to be added]_ | _[Content to be added]_ |
-| Coupling | _[Content to be added]_ | _[Content to be added]_ |
-| Response time | _[Content to be added]_ | _[Content to be added]_ |
-| Latency | _[Content to be added]_ | _[Content to be added]_ |
-| Complexity | _[Content to be added]_ | _[Content to be added]_ |
-| Fault handling | _[Content to be added]_ | _[Content to be added]_ |
-| Scalability | _[Content to be added]_ | _[Content to be added]_ |
+## Part 6: Comparing gRPC vs Message Broker
+
+| Criteria             | gRPC                                                                                     | Message Broker (RabbitMQ/Kafka)                                                   |
+|---------------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| Communication model  | **Synchronous RPC**: Client sends a request, waits for response. Can support streaming.   | **Asynchronous messaging**: Producers send messages to queues/topics, consumers process at their own pace. |
+| Coupling             | **Tighter coupling**: Clients must know service API and endpoint. Schema changes require updates. | **Looser coupling**: Producers and consumers are decoupled; they interact via queues/topics rather than direct calls. |
+| Response time        | **Low/fast**: Typically millisecond-level response if services are within the same network. | **Slower/variable**: Depends on queue length, consumer processing time, network; milliseconds to seconds. |
+| Latency              | **Low latency**: Optimized for point-to-point calls with binary serialization (Protobuf). | **Higher latency**: Messages go through broker and may wait in queues before processing. |
+| Complexity           | **Moderate**: Requires service definition (Protobuf), code generation, and service discovery. | **Higher**: Requires broker setup, queues/exchanges/topics configuration, and consumer management. |
+| Fault handling       | **Limited**: If the server is down, the client request fails. Needs retries or circuit breakers. | **Strong**: Supports message persistence, acknowledgments, retries, and dead-letter queues for reliability. |
+| Scalability          | **Service-level scaling**: Multiple instances can handle more requests, but scaling tightly coupled services is manual. | **Highly scalable**: Multiple consumers can share the workload, brokers can be clustered, supports horizontal scaling. |
+| Use case focus       | Real-time API calls, microservice RPC, low-latency requests.                               | Background tasks, event streaming, pub/sub notifications, reliable asynchronous communication. |
+
+
 
 ---
 
 ## Part 7: Comparing RabbitMQ vs Kafka
 
-| Criteria | RabbitMQ | Kafka |
-|----------|----------|-------|
-| Model | _[Content to be added]_ | _[Content to be added]_ |
-| Delivery mechanism | _[Content to be added]_ | _[Content to be added]_ |
-| Throughput | _[Content to be added]_ | _[Content to be added]_ |
-| Latency | _[Content to be added]_ | _[Content to be added]_ |
-| Retention | _[Content to be added]_ | _[Content to be added]_ |
-| Ordering | _[Content to be added]_ | _[Content to be added]_ |
-| Use case | _[Content to be added]_ | _[Content to be added]_ |
-| Complexity | _[Content to be added]_ | _[Content to be added]_ |
-| Replay capability | _[Content to be added]_ | _[Content to be added]_ |
+| Criteria             | RabbitMQ                                                                                       | Kafka                                                                                   |
+|---------------------|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| Model                | **Message broker / queue-based**: Messages are sent to queues and consumed by one or more consumers. | **Distributed log / streaming platform**: Messages are written to topics partitioned across brokers; consumers read from partitions. |
+| Delivery mechanism   | **Push-based (default)**: Broker pushes messages to consumers. Supports acknowledgment and retries. | **Pull-based**: Consumers pull messages at their own pace; supports offsets for replay. |
+| Throughput           | Moderate: Suitable for task queues and event notifications, but may struggle with very high throughput. | High: Optimized for massive data streams (millions of messages/sec).                    |
+| Latency              | Low to moderate: Typically milliseconds, but depends on queue length and ack processing.      | Very low: Near real-time streaming, typically milliseconds even under high load.       |
+| Retention            | Short-term by default: Messages are removed once acknowledged unless explicitly persisted.    | Long-term/persistent: Messages are stored for a configurable retention period, independent of consumption. |
+| Ordering             | Guarantees ordering **per queue**, but not across multiple queues or consumers.               | Guarantees ordering **per partition**; multiple partitions may not preserve global order. |
+| Use case             | Task queues, RPC, publish/subscribe, notifications, workflow processing.                      | Event streaming, log aggregation, analytics pipelines, event sourcing, high-throughput data streams. |
+| Complexity           | Moderate: Requires setup of queues, exchanges, and bindings; simpler for small deployments.  | Higher: Requires topic/partition management, broker clusters, and consumer group coordination. |
+| Replay capability    | Limited: Once a message is acknowledged and removed, it cannot be replayed (unless manually stored). | Strong: Consumers can replay messages using offsets; ideal for auditing and reprocessing. |
 
 ---
 
@@ -712,12 +717,46 @@ Example: A trading platform processes transactions via gRPC, but publishes each 
 
 ## Discussion Questions
 
-1. **Why shouldn't we use synchronous calls for all communication?**
+1. **Why shouldn't we use synchronous calls for all communication?**  
+   - Synchronous calls (like HTTP or gRPC RPCs) **block the client** until the server responds.  
+   - If the server is slow or unavailable, the client is delayed or fails.  
+   - Synchronous calls **increase coupling** between services, making systems less resilient.  
+   - Asynchronous messaging allows services to **continue working** without waiting, improving scalability and fault tolerance.  
 
-2. **In what cases can messages be lost? How to ensure at-least-once delivery?**
+2. **In what cases can messages be lost? How to ensure at-least-once delivery?**  
+   - Messages can be lost due to:
+     - Broker crashes without persistence.
+     - Consumer failures before acknowledgment.
+     - Network issues during transmission.
+   - To ensure **at-least-once delivery**:
+     - Use **persistent messages** in the broker.
+     - Require **acknowledgment** after successful processing.
+     - Implement **retry mechanisms** and dead-letter queues for failed messages.
+     - Be aware that retries may cause **duplicate messages**, which requires idempotent consumers.  
 
-3. **Can Kafka completely replace RabbitMQ? Why or why not?**
+3. **Can Kafka completely replace RabbitMQ? Why or why not?**  
+   - Kafka and RabbitMQ have different strengths:
+     - Kafka is **high-throughput, log-based, replayable**, great for streaming and analytics.  
+     - RabbitMQ is **reliable, flexible routing, work queues, RPC**, better for task distribution and short-lived messages.  
+   - Kafka cannot fully replace RabbitMQ because:
+     - RabbitMQ supports **complex routing and immediate task distribution** with acknowledgments.  
+     - Kafka is **designed for streaming and replayable logs**, not small, short-lived tasks.  
+   - Hybrid architectures often use **both** for their respective strengths.  
 
-4. **Is gRPC suitable for client-to-server communication?**
+4. **Is gRPC suitable for client-to-server communication?**  
+   - Yes, gRPC is ideal for **client-to-server synchronous calls** where:
+     - Low latency is required.
+     - Strongly typed APIs are preferred.
+     - Binary serialization (Protobuf) improves performance.
+   - gRPC also supports **streaming** in both directions, which can be useful for real-time updates.  
+   - Not suitable if clients need **offline, decoupled, or asynchronous processing**, where a message broker would be better.  
 
-5. **How to handle failures in asynchronous communication?**
+5. **How to handle failures in asynchronous communication?**  
+   - Common strategies:
+     - **Acknowledgments and retries:** Ensure the broker retries unprocessed messages.  
+     - **Dead-letter queues (DLQ):** Store failed messages for later inspection or reprocessing.  
+     - **Idempotent consumers:** Make processing safe to retry without side effects.  
+     - **Monitoring and alerting:** Detect message pile-ups or processing failures.  
+     - **Circuit breakers or backpressure:** Protect services from overload if consumers are slow.  
+
+
