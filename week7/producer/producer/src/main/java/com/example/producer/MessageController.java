@@ -6,10 +6,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/send")
 public class MessageController {
+    private static final Logger logger  = LoggerFactory.getLogger(MessageController.class);
 
     private final RabbitTemplate rabbitTemplate;
     @Value("${app.queue}")
@@ -21,6 +24,7 @@ public class MessageController {
 
     @PostMapping
     public String send(@RequestParam String msg) {
+        logger.info("Sending message: " + msg);
         rabbitTemplate.convertAndSend(queueName, msg);
         return "Sent message: " + msg;
     }
