@@ -417,7 +417,7 @@ How it works:
 
 ### 5.1. Kafka Overview
 
-> _[Content to be added]_
+Apache Kafka is a Distributed Event Streaming Platform. Unlike RabbitMQ (which focuses on message queuing), Kafka is designed as a "distributed log," specializing in handling high-throughput data streams, providing durable event storage, and allowing multiple applications to reread historical data.
 
 ### 5.2. Kafka Architecture
 
@@ -425,51 +425,66 @@ How it works:
 
 ##### 1. Producer
 
-> _[Content to be added]_
+The application that sends data (messages/records) to Kafka.
 
 ##### 2. Consumer
 
-> _[Content to be added]_
+The application that reads and processes data from Kafka.
 
 ##### 3. Topic
 
-> _[Content to be added]_
+A category for message streams (similar to a Table in a Database or a file Folder). Producers send messages to Topics, and Consumers read from Topics.
 
 ##### 4. Partition
 
-> _[Content to be added]_
+To allow a topic to hold more data than can fit on a single server, Kafka divides a Topic into multiple parts called Partitions. These partitions are distributed across different Brokers.
 
 ##### 5. Broker
 
-> _[Content to be added]_
+A Kafka server. A Kafka Cluster consists of multiple Brokers running together to share the load and store data.
 
 ##### 6. ZooKeeper/KRaft
 
-> _[Content to be added]_
+**ZooKeeper (Old):** Used to manage the Kafka cluster's state (who is the leader, which brokers are alive...).
+**KRaft (New):** Eliminates ZooKeeper, allowing Kafka to manage its own metadata, simplifying setup.
 
 ### 5.3. Kafka Topics and Partitions
 
-> _[Content to be added]_
+A Topic is a logical log stream. A Partition is the physical unit of storage and scaling.
+>
+Each message within a partition has a unique sequence number called an **Offset**.
+>
+Kafka guarantees message order within a single Partition, but **not** across the entire Topic (if the topic has multiple partitions).
 
 ### 5.4. Consumer Groups
 
-> _[Content to be added]_
+This is the mechanism Kafka uses to scale data consumption:
+>
+* A **Consumer Group** is a group of consumers coordinating to read from a Topic.
+* Each Partition is read by **only one consumer** within the same Group at a time (ensuring no duplicate processing).
+* To process faster, you can increase the number of Consumers (up to the number of Partitions).
 
 ### 5.5. Message Retention
 
-> _[Content to be added]_
+Unlike RabbitMQ (which deletes messages immediately after reading), Kafka retains messages even after they have been read by a Consumer. Messages are only deleted when:
+>
+* A time limit is reached (e.g., after 7 days - default).
+* A size limit is exceeded (e.g., the topic exceeds 100GB).
+>
+This enables the **"Replay"** feature to re-process old data.
 
 ### 5.6. Kafka Advantages
 
-> _[Content to be added]_
+* **High Throughput:** Processes millions of messages per second.
+* **Scalability:** Easily scales by adding Brokers and Partitions.
+* **Permanent Storage:** Stores data safely; it is not lost when a consumer reads it.
+* **High Availability:** Data is replicated (replication) across multiple brokers; if one machine dies, the data is still available.
 
 ### 5.7. Kafka Disadvantages
 
-> _[Content to be added]_
-
----
-
-## Part 6: Comparing gRPC vs Message Broker
+* **Complexity:** More complex to set up and operate than RabbitMQ (requires ZooKeeper or KRaft configuration).
+* **Latency:** Slightly higher latency than RabbitMQ (milliseconds vs. microseconds) due to its disk-writing mechanism.
+* **Overkill:** Too cumbersome (overkill) for small applications that only need to send a few simple messages.
 
 ## Part 6: Comparing gRPC vs Message Broker
 
