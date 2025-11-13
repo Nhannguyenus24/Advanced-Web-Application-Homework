@@ -673,7 +673,63 @@ Example: A trading platform processes transactions via gRPC, but publishes each 
 
 ### 10.3. Demo 3: Kafka Event Streaming
 
-> _[Demo code and instructions]_
+> The `week7/kafka/demo` project illustrates a mini event-driven order pipeline backed by Kafka.
+>
+> **Prerequisites**
+> - Docker (or a running Kafka cluster). A quick start is provided via `week7/kafka/docker-compose.yml`.
+> - Java 21+ and Maven (wrapper included).
+>
+> **Step-by-step walkthrough**
+> - Start Kafka locally:
+>   ```bash
+>   cd week7/kafka
+>   docker-compose up -d
+>   ```
+> - Run the Spring Boot demo:
+>   ```bash
+>   cd demo
+>   ./mvnw spring-boot:run
+>   ```
+> - Produce an order event through the REST API (adjust payload as needed):
+>   ```bash
+>   curl -X POST http://localhost:8081/api/orders \
+>     -H "Content-Type: application/json" \
+>     -d '{"customerId":"c1","totalAmount":120000}'
+>   ```
+>   The `OrderProducer` publishes an `OrderEvent` to the `order-events` topic. Three simulated services—Payment, Inventory, Notification—consume the same topic via their own consumer groups and persist the processed events in-memory for inspection.
+> - Inspect what each service has received:
+>   ```bash
+>   curl http://localhost:8081/api/orders/events/payment-service
+>   curl http://localhost:8081/api/orders/events/inventory-service
+>   curl http://localhost:8081/api/orders/events/notification-service
+>   ```
+> - Demonstrate replay by resetting offsets to the earliest position (so consumers will reprocess every message on the next poll):
+>   ```bash
+>   cd week7/kafka
+>   kafka-consumer-groups --bootstrap-server localhost:9092 \
+>     --group payment-service --topic order-events --reset-offsets --to-earliest --execute
+>   kafka-consumer-groups --bootstrap-server localhost:9092 \
+>     --group inventory-service --topic order-events --reset-offsets --to-earliest --execute
+>   kafka-consumer-groups --bootstrap-server localhost:9092 \
+>     --group notification-service --topic order-events --reset-offsets --to-earliest --execute
+>   ```
+>   Alternatively, call the built-in replay endpoint which spins up a short-lived consumer to read the full log:
+>   ```bash
+>   curl -X POST http://localhost:8081/api/orders/events/replay
+>   ```
+>   Clear all events if needed
+>   ```bash
+>   docker compose exec kafka kafka-topics --bootstrap-server kafka:9092 --delete --topic order-events
+>   ```
+> - After replaying (via CLI reset or API endpoint), check the per-service history again to confirm events were reprocessed.
+> - Shut everything down when done:
+>   ```bash
+>   # stop the Spring Boot app (Ctrl+C in the run terminal)
+>   cd week7/kafka
+>   docker-compose down
+>   ```
+>
+> This demo highlights the difference between real-time consumption (separate consumer groups) and log replay capabilities for recovery or analytics.
 
 ---
 
