@@ -1,14 +1,22 @@
 package com.example.grpc.grpc;
 
-import com.example.grpc.model.Product;
-import com.example.grpc.service.ProductServiceImpl;
-import com.example.productservice.grpc.*;
-import io.grpc.stub.StreamObserver;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.grpc.server.service.GrpcService;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.example.grpc.model.Product;
+import com.example.grpc.service.ProductServiceImpl;
+import com.example.productservice.grpc.DeleteResponse;
+import com.example.productservice.grpc.Empty;
+import com.example.productservice.grpc.ProductIdRequest;
+import com.example.productservice.grpc.ProductListResponse;
+import com.example.productservice.grpc.ProductRequest;
+import com.example.productservice.grpc.ProductResponse;
+import com.example.productservice.grpc.ProductServiceGrpc;
+
+import io.grpc.stub.StreamObserver;
+import net.devh.boot.grpc.server.service.GrpcService;
 
 @GrpcService
 public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBase {
@@ -50,10 +58,10 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
                     .build();
 
             responseObserver.onNext(response);
+            responseObserver.onCompleted();
         } else {
             responseObserver.onError(new RuntimeException("Product not found with id: " + request.getId()));
         }
-        responseObserver.onCompleted();
     }
 
     @Override
@@ -75,10 +83,10 @@ public class ProductGrpcService extends ProductServiceGrpc.ProductServiceImplBas
                     .build();
 
             responseObserver.onNext(response);
+            responseObserver.onCompleted();
         } else {
             responseObserver.onError(new RuntimeException("Product not found with id: " + request.getId()));
         }
-        responseObserver.onCompleted();
     }
 
     @Override
